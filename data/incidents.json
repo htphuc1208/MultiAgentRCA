@@ -1,0 +1,651 @@
+[
+  {
+    "incident_id": "INC-RAN-001",
+    "domain": "RAN",
+    "severity": "High",
+    "symptom": "User throughput drop in Cell-23",
+    "description": "Users attached to Cell-23 report low downlink throughput during busy hour.",
+    "time_window": "2026-06-18T09:00:00+07:00/2026-06-18T10:00:00+07:00",
+    "primary_ne": "Cell-23",
+    "service_impact": "Mobile broadband degradation for the downtown sector.",
+    "affected_services": ["eMBB", "VoLTE"],
+    "alarms": ["High PRB Utilization", "Low SINR", "Handover Failure Spike"],
+    "kpis": {
+      "prb_utilization": {"unit": "%", "series": [62, 68, 74, 88, 95], "latest": 95, "normal_range": [20, 80]},
+      "sinr_avg": {"unit": "dB", "series": [18.1, 16.4, 11.0, 6.8, 4.2], "latest": 4.2, "normal_range": [12, 30]},
+      "handover_success_rate": {"unit": "%", "series": [98.2, 97.1, 91.0, 82.4, 71.5], "latest": 71.5, "normal_range": [95, 100]}
+    },
+    "logs": [
+      "09:08 RRM: interference signature detected on Cell-23 uplink band",
+      "09:15 SON: neighbor cells normal for Cell-22 and Cell-24",
+      "09:22 MAC: scheduler throttling due to poor SINR distribution"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "UE", "type": "subscriber"},
+        {"id": "Cell-23", "type": "cell"},
+        {"id": "gNB-07", "type": "gnb"},
+        {"id": "Backhaul-Router-02", "type": "router"},
+        {"id": "UPF-01", "type": "core"}
+      ],
+      "edges": [["UE", "Cell-23"], ["Cell-23", "gNB-07"], ["gNB-07", "Backhaul-Router-02"], ["Backhaul-Router-02", "UPF-01"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-RAN-044", "summary": "External interference on Cell-19 caused Low SINR and PRB saturation."}
+    ],
+    "diagnostics": {
+      "ping Backhaul-Router-02 from gNB-07": "0% packet loss, latency 2 ms, link up",
+      "show neighbor Cell-23": "Neighbor cells normal; no backhaul packet loss observed"
+    },
+    "sop_id": "SOP-RAN-INTERFERENCE",
+    "ground_truth": "Interference on Cell-23",
+    "expected_actions": [
+      "Verify external interference source",
+      "Review recent radio parameter changes",
+      "Adjust PCI tilt or power if needed",
+      "Monitor SINR and handover success rate after action"
+    ],
+    "validation": {
+      "post_fix_kpis": {"sinr_avg": 15.6, "handover_success_rate": 97.2, "prb_utilization": 71},
+      "cleared_alarms": ["Low SINR", "Handover Failure Spike"],
+      "checks": [
+        {"name": "SINR above threshold", "passed": true, "observed": "15.6 dB"},
+        {"name": "Handover success recovered", "passed": true, "observed": "97.2%"},
+        {"name": "Alarm cleared", "passed": true, "observed": "Low SINR cleared within 15 minutes"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-RAN-002",
+    "domain": "RAN",
+    "severity": "Critical",
+    "symptom": "gNB-12 lost N2 connectivity and cells are unavailable",
+    "description": "Several cells under gNB-12 are unavailable after transport alarms.",
+    "time_window": "2026-06-18T10:10:00+07:00/2026-06-18T10:40:00+07:00",
+    "primary_ne": "gNB-12",
+    "service_impact": "Three cells are out of service.",
+    "affected_services": ["eMBB", "VoLTE", "Emergency calls"],
+    "alarms": ["Backhaul Link Down", "N2 Path Failure", "Cell Unavailable"],
+    "kpis": {
+      "cell_availability": {"unit": "%", "series": [99.9, 99.8, 44.0, 0.0], "latest": 0.0, "normal_range": [99, 100]},
+      "packet_loss": {"unit": "%", "series": [0, 0, 18, 100], "latest": 100, "normal_range": [0, 1]},
+      "n2_setup_success_rate": {"unit": "%", "series": [99.5, 99.2, 40.1, 0.0], "latest": 0.0, "normal_range": [98, 100]}
+    },
+    "logs": [
+      "10:12 SCTP: N2 association down for gNB-12",
+      "10:13 OAM: backhaul interface unreachable from gNB-12",
+      "10:14 RAN: cells under gNB-12 moved to unavailable state"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "Cell-12A", "type": "cell"},
+        {"id": "Cell-12B", "type": "cell"},
+        {"id": "gNB-12", "type": "gnb"},
+        {"id": "Backhaul-Router-12", "type": "router"},
+        {"id": "AMF-02", "type": "core"}
+      ],
+      "edges": [["Cell-12A", "gNB-12"], ["Cell-12B", "gNB-12"], ["gNB-12", "Backhaul-Router-12"], ["Backhaul-Router-12", "AMF-02"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-RAN-051", "summary": "Backhaul link failure on gNB caused N2 path down and cells unavailable."}
+    ],
+    "diagnostics": {
+      "ping Backhaul-Router-12 from gNB-12": "100% packet loss, destination unreachable",
+      "show interface gNB-12 backhaul": "Operational state down; loss of signal detected"
+    },
+    "sop_id": "SOP-RAN-BACKHAUL",
+    "ground_truth": "Backhaul link failure on gNB-12",
+    "expected_actions": [
+      "Escalate backhaul link alarm to transport team",
+      "Check interface optical power and physical link",
+      "Restore N2 path and verify cell availability",
+      "Monitor packet loss after restoration"
+    ],
+    "validation": {
+      "post_fix_kpis": {"cell_availability": 99.7, "packet_loss": 0.0, "n2_setup_success_rate": 99.1},
+      "cleared_alarms": ["Backhaul Link Down", "N2 Path Failure", "Cell Unavailable"],
+      "checks": [
+        {"name": "Backhaul reachable", "passed": true, "observed": "0% packet loss"},
+        {"name": "N2 association restored", "passed": true, "observed": "99.1% setup success"},
+        {"name": "Cells available", "passed": true, "observed": "99.7% availability"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-RAN-003",
+    "domain": "RAN",
+    "severity": "Medium",
+    "symptom": "Handover failures increased around Cell-31",
+    "description": "Users moving between adjacent sectors experience call drops.",
+    "time_window": "2026-06-18T11:00:00+07:00/2026-06-18T11:30:00+07:00",
+    "primary_ne": "Cell-31",
+    "service_impact": "Mobility degradation near the stadium cluster.",
+    "affected_services": ["VoLTE", "eMBB"],
+    "alarms": ["Handover Failure Spike", "PCI Conflict Warning"],
+    "kpis": {
+      "handover_success_rate": {"unit": "%", "series": [97.8, 93.0, 84.2, 66.4], "latest": 66.4, "normal_range": [95, 100]},
+      "radio_link_failure_rate": {"unit": "%", "series": [0.4, 1.9, 4.7, 8.5], "latest": 8.5, "normal_range": [0, 2]}
+    },
+    "logs": [
+      "11:04 SON: PCI collision detected between Cell-31 and Cell-32",
+      "11:06 RRC: handover preparation failure increased for Cell-31 to Cell-32",
+      "11:12 Audit: recent neighbor relation change created ambiguous PCI mapping"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "Cell-31", "type": "cell"},
+        {"id": "Cell-32", "type": "cell"},
+        {"id": "gNB-09", "type": "gnb"},
+        {"id": "Backhaul-Router-09", "type": "router"},
+        {"id": "AMF-01", "type": "core"}
+      ],
+      "edges": [["Cell-31", "gNB-09"], ["Cell-32", "gNB-09"], ["gNB-09", "Backhaul-Router-09"], ["Backhaul-Router-09", "AMF-01"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-RAN-061", "summary": "PCI collision between neighboring cells caused handover failure spike."}
+    ],
+    "diagnostics": {
+      "show pci Cell-31 Cell-32": "Duplicate PCI detected on adjacent cells Cell-31 and Cell-32",
+      "ping Backhaul-Router-09 from gNB-09": "0% packet loss, link up"
+    },
+    "sop_id": "SOP-RAN-PCI",
+    "ground_truth": "PCI collision between Cell-31 and Cell-32",
+    "expected_actions": [
+      "Audit PCI and neighbor relation configuration",
+      "Assign non-conflicting PCI to one affected cell",
+      "Validate handover success rate and radio link failure rate"
+    ],
+    "validation": {
+      "post_fix_kpis": {"handover_success_rate": 98.1, "radio_link_failure_rate": 0.8},
+      "cleared_alarms": ["PCI Conflict Warning", "Handover Failure Spike"],
+      "checks": [
+        {"name": "PCI conflict removed", "passed": true, "observed": "No duplicate PCI"},
+        {"name": "Handover success recovered", "passed": true, "observed": "98.1%"},
+        {"name": "RLF normalized", "passed": true, "observed": "0.8%"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-RAN-004",
+    "domain": "RAN",
+    "severity": "Critical",
+    "symptom": "Cell-44 down with radio unit power alarms",
+    "description": "Cell-44 is unavailable after RRU power module alarms.",
+    "time_window": "2026-06-18T12:00:00+07:00/2026-06-18T12:30:00+07:00",
+    "primary_ne": "Cell-44",
+    "service_impact": "Coverage hole in suburban site.",
+    "affected_services": ["eMBB", "VoLTE"],
+    "alarms": ["Cell Unavailable", "RRU Power Failure", "VSWR Degraded"],
+    "kpis": {
+      "cell_availability": {"unit": "%", "series": [99.9, 50.0, 0.0], "latest": 0.0, "normal_range": [99, 100]},
+      "rru_voltage": {"unit": "V", "series": [48.0, 35.1, 0.0], "latest": 0.0, "normal_range": [46, 50]}
+    },
+    "logs": [
+      "12:02 RRU: power module failure reported for radio unit serving Cell-44",
+      "12:03 OAM: radio unit unreachable; cell unavailable",
+      "12:04 RF: VSWR degraded after power drop"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "Cell-44", "type": "cell"},
+        {"id": "RRU-44", "type": "radio"},
+        {"id": "gNB-14", "type": "gnb"},
+        {"id": "Backhaul-Router-14", "type": "router"},
+        {"id": "AMF-02", "type": "core"}
+      ],
+      "edges": [["Cell-44", "RRU-44"], ["RRU-44", "gNB-14"], ["gNB-14", "Backhaul-Router-14"], ["Backhaul-Router-14", "AMF-02"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-RAN-066", "summary": "Remote radio unit power failure caused cell unavailable alarm."}
+    ],
+    "diagnostics": {
+      "show rru RRU-44": "RRU unreachable; power module output 0 V",
+      "ping Backhaul-Router-14 from gNB-14": "0% packet loss, link up"
+    },
+    "sop_id": "SOP-RAN-RRU-POWER",
+    "ground_truth": "Remote radio unit power failure",
+    "expected_actions": [
+      "Dispatch field team to inspect RRU power module",
+      "Replace or restore power module",
+      "Verify cell availability after RRU recovery"
+    ],
+    "validation": {
+      "post_fix_kpis": {"cell_availability": 99.8, "rru_voltage": 48.2},
+      "cleared_alarms": ["Cell Unavailable", "RRU Power Failure", "VSWR Degraded"],
+      "checks": [
+        {"name": "RRU reachable", "passed": true, "observed": "RRU online at 48.2 V"},
+        {"name": "Cell available", "passed": true, "observed": "99.8%"},
+        {"name": "Power alarms cleared", "passed": true, "observed": "RRU Power Failure cleared"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-CORE-001",
+    "domain": "Core",
+    "severity": "High",
+    "symptom": "PDU session establishment failures increased in slice eMBB-01",
+    "description": "Subscribers cannot establish data sessions in one network slice.",
+    "time_window": "2026-06-18T13:00:00+07:00/2026-06-18T13:30:00+07:00",
+    "primary_ne": "SMF-01",
+    "service_impact": "Mobile data session setup failures.",
+    "affected_services": ["5GC PDU session", "eMBB"],
+    "alarms": ["PDU Session Failure Spike", "SMF Policy Timeout", "Database Latency High"],
+    "kpis": {
+      "pdu_session_success_rate": {"unit": "%", "series": [99.0, 97.2, 83.0, 61.5], "latest": 61.5, "normal_range": [98, 100]},
+      "policy_db_latency_ms": {"unit": "ms", "series": [15, 21, 180, 910], "latest": 910, "normal_range": [0, 80]}
+    },
+    "logs": [
+      "13:07 SMF: policy database timeout while creating PDU session",
+      "13:09 PCF: delayed policy response for slice eMBB-01",
+      "13:11 SMF: session establishment rejected due to policy lookup timeout"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "UE", "type": "subscriber"},
+        {"id": "AMF-01", "type": "core"},
+        {"id": "SMF-01", "type": "core"},
+        {"id": "Policy-DB-01", "type": "database"},
+        {"id": "UPF-01", "type": "core"}
+      ],
+      "edges": [["UE", "AMF-01"], ["AMF-01", "SMF-01"], ["SMF-01", "Policy-DB-01"], ["SMF-01", "UPF-01"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-CORE-018", "summary": "SMF policy database timeout caused PDU session failures."}
+    ],
+    "diagnostics": {
+      "show smf SMF-01 policy-db": "Policy DB latency 910 ms; timeout rate 38%",
+      "show upf UPF-01 status": "UPF healthy; throughput normal"
+    },
+    "sop_id": "SOP-CORE-SMF-POLICY",
+    "ground_truth": "SMF policy database timeout",
+    "expected_actions": [
+      "Check SMF to policy database latency",
+      "Fail over policy database endpoint if timeout persists",
+      "Retry PDU session setup after dependency recovery"
+    ],
+    "validation": {
+      "post_fix_kpis": {"pdu_session_success_rate": 98.8, "policy_db_latency_ms": 22},
+      "cleared_alarms": ["SMF Policy Timeout", "Database Latency High"],
+      "checks": [
+        {"name": "Policy DB latency normalized", "passed": true, "observed": "22 ms"},
+        {"name": "PDU sessions recovered", "passed": true, "observed": "98.8% success"},
+        {"name": "Timeout alarm cleared", "passed": true, "observed": "SMF Policy Timeout cleared"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-CORE-002",
+    "domain": "Core",
+    "severity": "High",
+    "symptom": "AMF registration failures during signaling burst",
+    "description": "Registration requests fail after a surge in attach attempts.",
+    "time_window": "2026-06-18T14:00:00+07:00/2026-06-18T14:30:00+07:00",
+    "primary_ne": "AMF-02",
+    "service_impact": "New subscribers cannot register.",
+    "affected_services": ["5GC registration", "VoNR"],
+    "alarms": ["AMF Overload", "Registration Reject Spike", "CPU High"],
+    "kpis": {
+      "registration_success_rate": {"unit": "%", "series": [99.3, 96.2, 80.5, 58.0], "latest": 58.0, "normal_range": [98, 100]},
+      "amf_cpu": {"unit": "%", "series": [42, 71, 91, 96], "latest": 96, "normal_range": [0, 75]}
+    },
+    "logs": [
+      "14:03 AMF: overload control activated after signaling spike",
+      "14:05 AMF: registration rejected due to CPU pressure",
+      "14:10 NRF: AMF-02 still registered but capacity reduced"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "gNB-12", "type": "gnb"},
+        {"id": "AMF-02", "type": "core"},
+        {"id": "NRF-01", "type": "core"},
+        {"id": "SMF-02", "type": "core"}
+      ],
+      "edges": [["gNB-12", "AMF-02"], ["AMF-02", "NRF-01"], ["AMF-02", "SMF-02"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-CORE-020", "summary": "AMF overload after signaling spike caused registration rejects."}
+    ],
+    "diagnostics": {
+      "show amf AMF-02 load": "CPU 96%, overload control active, reject rate 42%",
+      "show nrf AMF-02": "AMF registered; service discoverable"
+    },
+    "sop_id": "SOP-CORE-AMF-OVERLOAD",
+    "ground_truth": "AMF overload after signaling spike",
+    "expected_actions": [
+      "Confirm AMF overload and signaling source",
+      "Scale AMF capacity or shift traffic",
+      "Validate registration success rate after load relief"
+    ],
+    "validation": {
+      "post_fix_kpis": {"registration_success_rate": 99.0, "amf_cpu": 51},
+      "cleared_alarms": ["AMF Overload", "Registration Reject Spike", "CPU High"],
+      "checks": [
+        {"name": "AMF CPU normalized", "passed": true, "observed": "51%"},
+        {"name": "Registration recovered", "passed": true, "observed": "99.0%"},
+        {"name": "Overload cleared", "passed": true, "observed": "overload control inactive"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-CORE-003",
+    "domain": "Core",
+    "severity": "High",
+    "symptom": "UPF-03 throughput degradation for enterprise APN",
+    "description": "Data plane throughput drops while control plane is healthy.",
+    "time_window": "2026-06-18T15:00:00+07:00/2026-06-18T15:30:00+07:00",
+    "primary_ne": "UPF-03",
+    "service_impact": "Enterprise APN users see slow data transfer.",
+    "affected_services": ["Enterprise data", "5GC user plane"],
+    "alarms": ["UPF Throughput Degradation", "CPU Saturation", "Queue Drops High"],
+    "kpis": {
+      "upf_cpu": {"unit": "%", "series": [55, 73, 91, 97], "latest": 97, "normal_range": [0, 75]},
+      "throughput_gbps": {"unit": "Gbps", "series": [37, 31, 18, 9], "latest": 9, "normal_range": [25, 60]},
+      "queue_drop_rate": {"unit": "%", "series": [0.1, 0.4, 4.0, 9.1], "latest": 9.1, "normal_range": [0, 1]}
+    },
+    "logs": [
+      "15:06 UPF: CPU saturation on packet processing workers",
+      "15:07 UPF: queue drops high on enterprise APN datapath",
+      "15:09 SMF: session control healthy for UPF-03"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "SMF-03", "type": "core"},
+        {"id": "UPF-03", "type": "core"},
+        {"id": "DN-Router-03", "type": "router"},
+        {"id": "Enterprise-APN", "type": "service"}
+      ],
+      "edges": [["SMF-03", "UPF-03"], ["UPF-03", "DN-Router-03"], ["DN-Router-03", "Enterprise-APN"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-CORE-024", "summary": "UPF CPU saturation degraded enterprise APN throughput."}
+    ],
+    "diagnostics": {
+      "show upf UPF-03 workers": "Packet workers CPU 97%; queue drops 9.1%",
+      "show smf SMF-03 status": "SMF control plane healthy"
+    },
+    "sop_id": "SOP-CORE-UPF-CPU",
+    "ground_truth": "UPF CPU saturation",
+    "expected_actions": [
+      "Confirm UPF worker CPU and queue drops",
+      "Shift traffic or scale UPF capacity",
+      "Validate throughput and drop rate after traffic relief"
+    ],
+    "validation": {
+      "post_fix_kpis": {"upf_cpu": 48, "throughput_gbps": 35, "queue_drop_rate": 0.2},
+      "cleared_alarms": ["CPU Saturation", "Queue Drops High"],
+      "checks": [
+        {"name": "UPF CPU normalized", "passed": true, "observed": "48%"},
+        {"name": "Throughput recovered", "passed": true, "observed": "35 Gbps"},
+        {"name": "Queue drops normalized", "passed": true, "observed": "0.2%"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-CORE-004",
+    "domain": "Core",
+    "severity": "Medium",
+    "symptom": "Service discovery failures from core network functions",
+    "description": "Several NFs fail to resolve peer endpoints through DNS.",
+    "time_window": "2026-06-18T16:00:00+07:00/2026-06-18T16:30:00+07:00",
+    "primary_ne": "DNS-CORE-01",
+    "service_impact": "NF service discovery delays and intermittent session failures.",
+    "affected_services": ["5GC service discovery", "PDU session"],
+    "alarms": ["DNS Query Failure", "NRF Service Discovery Timeout", "Resolver SERVFAIL"],
+    "kpis": {
+      "dns_success_rate": {"unit": "%", "series": [99.9, 91.0, 72.5, 50.2], "latest": 50.2, "normal_range": [99, 100]},
+      "nrf_discovery_latency_ms": {"unit": "ms", "series": [30, 75, 220, 640], "latest": 640, "normal_range": [0, 100]}
+    },
+    "logs": [
+      "16:04 DNS: SERVFAIL for nrf.service.core.local",
+      "16:05 NRF: service discovery timeout due to resolver error",
+      "16:07 SMF: peer endpoint lookup failed"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "DNS-CORE-01", "type": "dns"},
+        {"id": "NRF-01", "type": "core"},
+        {"id": "AMF-01", "type": "core"},
+        {"id": "SMF-01", "type": "core"}
+      ],
+      "edges": [["AMF-01", "DNS-CORE-01"], ["SMF-01", "DNS-CORE-01"], ["DNS-CORE-01", "NRF-01"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-CORE-031", "summary": "Core DNS resolver outage caused NRF service discovery timeout."}
+    ],
+    "diagnostics": {
+      "dig nrf.service.core.local @DNS-CORE-01": "SERVFAIL from resolver",
+      "show nrf NRF-01 health": "NRF healthy; resolver dependency failing"
+    },
+    "sop_id": "SOP-CORE-DNS",
+    "ground_truth": "Core DNS resolver outage",
+    "expected_actions": [
+      "Verify DNS resolver health and query failures",
+      "Fail over to standby resolver",
+      "Validate NF service discovery latency and DNS success rate"
+    ],
+    "validation": {
+      "post_fix_kpis": {"dns_success_rate": 99.8, "nrf_discovery_latency_ms": 38},
+      "cleared_alarms": ["DNS Query Failure", "Resolver SERVFAIL", "NRF Service Discovery Timeout"],
+      "checks": [
+        {"name": "DNS queries succeed", "passed": true, "observed": "99.8%"},
+        {"name": "NRF discovery normalized", "passed": true, "observed": "38 ms"},
+        {"name": "Resolver alarm cleared", "passed": true, "observed": "SERVFAIL cleared"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-TRANS-001",
+    "domain": "Transport",
+    "severity": "High",
+    "symptom": "Packet loss on backhaul link Backhaul-Link-14",
+    "description": "RAN and core are healthy but backhaul packets are dropped.",
+    "time_window": "2026-06-18T17:00:00+07:00/2026-06-18T17:30:00+07:00",
+    "primary_ne": "Backhaul-Link-14",
+    "service_impact": "Intermittent throughput drop for several cells.",
+    "affected_services": ["Backhaul", "eMBB"],
+    "alarms": ["Optical Power Low", "CRC Errors High", "Packet Loss Backhaul"],
+    "kpis": {
+      "packet_loss": {"unit": "%", "series": [0.1, 0.8, 4.2, 12.6], "latest": 12.6, "normal_range": [0, 1]},
+      "rx_power_dbm": {"unit": "dBm", "series": [-10.2, -13.4, -18.5, -24.1], "latest": -24.1, "normal_range": [-18, -3]},
+      "crc_errors": {"unit": "count", "series": [12, 40, 900, 2600], "latest": 2600, "normal_range": [0, 100]}
+    },
+    "logs": [
+      "17:04 Router: optical attenuation detected on Backhaul-Link-14",
+      "17:06 Router: CRC errors high after RX power drop",
+      "17:10 RAN: radio KPIs stable; transport loss observed"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "gNB-14", "type": "gnb"},
+        {"id": "Backhaul-Link-14", "type": "link"},
+        {"id": "Transport-Router-14", "type": "router"},
+        {"id": "UPF-01", "type": "core"}
+      ],
+      "edges": [["gNB-14", "Backhaul-Link-14"], ["Backhaul-Link-14", "Transport-Router-14"], ["Transport-Router-14", "UPF-01"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-TRANS-011", "summary": "Fiber attenuation on backhaul link caused optical power low and CRC errors."}
+    ],
+    "diagnostics": {
+      "show optical Backhaul-Link-14": "RX power -24.1 dBm; attenuation above threshold",
+      "ping UPF-01 from gNB-14": "12.6% packet loss"
+    },
+    "sop_id": "SOP-TRANS-FIBER",
+    "ground_truth": "Fiber attenuation on Backhaul-Link-14",
+    "expected_actions": [
+      "Check optical RX power and CRC error trend",
+      "Dispatch fiber inspection or clean connector",
+      "Validate packet loss and optical power after repair"
+    ],
+    "validation": {
+      "post_fix_kpis": {"packet_loss": 0.0, "rx_power_dbm": -11.8, "crc_errors": 7},
+      "cleared_alarms": ["Optical Power Low", "CRC Errors High", "Packet Loss Backhaul"],
+      "checks": [
+        {"name": "Optical power recovered", "passed": true, "observed": "-11.8 dBm"},
+        {"name": "Packet loss cleared", "passed": true, "observed": "0.0%"},
+        {"name": "CRC errors normalized", "passed": true, "observed": "7"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-TRANS-002",
+    "domain": "Transport",
+    "severity": "Critical",
+    "symptom": "Router interface down after planned change",
+    "description": "Backhaul traffic failed after a maintenance commit.",
+    "time_window": "2026-06-18T18:00:00+07:00/2026-06-18T18:20:00+07:00",
+    "primary_ne": "Router-05",
+    "service_impact": "Site isolation for one aggregation ring.",
+    "affected_services": ["Backhaul", "Transport"],
+    "alarms": ["Interface Down", "Link Down", "Traffic Blackhole"],
+    "kpis": {
+      "interface_admin_state": {"unit": "", "series": ["up", "up", "down"], "latest": "down", "normal_range": ["up", "up"]},
+      "traffic_mbps": {"unit": "Mbps", "series": [860, 842, 0], "latest": 0, "normal_range": [200, 1200]}
+    },
+    "logs": [
+      "18:02 Config: commit disabled interface xe-0/0/5 on Router-05",
+      "18:03 Router: interface down, admin down after change window",
+      "18:05 NMS: traffic blackhole on aggregation path"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "Router-05", "type": "router"},
+        {"id": "Agg-Ring-01", "type": "transport"},
+        {"id": "gNB-05", "type": "gnb"},
+        {"id": "UPF-01", "type": "core"}
+      ],
+      "edges": [["gNB-05", "Router-05"], ["Router-05", "Agg-Ring-01"], ["Agg-Ring-01", "UPF-01"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-TRANS-016", "summary": "Router interface admin down after change caused link down."}
+    ],
+    "diagnostics": {
+      "show interface Router-05 xe-0/0/5": "Admin down, operational down, last commit 18:02",
+      "show commit Router-05 last": "Interface xe-0/0/5 disabled by planned change"
+    },
+    "sop_id": "SOP-TRANS-INTERFACE",
+    "ground_truth": "Router interface admin down after change",
+    "expected_actions": [
+      "Review latest router commit",
+      "Restore interface admin state if change was unintended",
+      "Validate traffic and link state after rollback"
+    ],
+    "validation": {
+      "post_fix_kpis": {"interface_admin_state": "up", "traffic_mbps": 875},
+      "cleared_alarms": ["Interface Down", "Link Down", "Traffic Blackhole"],
+      "checks": [
+        {"name": "Interface admin up", "passed": true, "observed": "up/up"},
+        {"name": "Traffic restored", "passed": true, "observed": "875 Mbps"},
+        {"name": "Blackhole cleared", "passed": true, "observed": "Traffic Blackhole cleared"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-TRANS-003",
+    "domain": "Transport",
+    "severity": "Medium",
+    "symptom": "BGP route flap between aggregation routers",
+    "description": "BGP adjacency repeatedly resets and affects user-plane routes.",
+    "time_window": "2026-06-18T19:00:00+07:00/2026-06-18T19:30:00+07:00",
+    "primary_ne": "Router-07",
+    "service_impact": "Intermittent route withdrawal for UPF prefixes.",
+    "affected_services": ["IP routing", "Backhaul"],
+    "alarms": ["BGP Neighbor Flap", "Route Withdraw Spike", "MTU Mismatch Warning"],
+    "kpis": {
+      "bgp_flap_count": {"unit": "count", "series": [0, 2, 8, 17], "latest": 17, "normal_range": [0, 1]},
+      "path_mtu": {"unit": "bytes", "series": [1500, 1500, 1400, 1400], "latest": 1400, "normal_range": [1500, 9000]}
+    },
+    "logs": [
+      "19:03 BGP: neighbor reset due to fragmentation needed",
+      "19:05 Router: MTU mismatch detected on peering link",
+      "19:08 BGP: route flap for UPF service prefix"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "Router-07", "type": "router"},
+        {"id": "Router-08", "type": "router"},
+        {"id": "UPF-02", "type": "core"},
+        {"id": "Agg-Ring-02", "type": "transport"}
+      ],
+      "edges": [["Router-07", "Router-08"], ["Router-08", "UPF-02"], ["Router-07", "Agg-Ring-02"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-TRANS-021", "summary": "BGP neighbor instability due to MTU mismatch caused route flap."}
+    ],
+    "diagnostics": {
+      "show bgp neighbor Router-08": "Neighbor flapping; last reset fragmentation needed",
+      "ping Router-08 size 1500 df-bit": "Packet too big; MTU mismatch"
+    },
+    "sop_id": "SOP-TRANS-BGP-MTU",
+    "ground_truth": "BGP neighbor instability due to MTU mismatch",
+    "expected_actions": [
+      "Compare MTU on both BGP peering interfaces",
+      "Align MTU configuration or path MTU",
+      "Validate BGP stability and route withdrawals"
+    ],
+    "validation": {
+      "post_fix_kpis": {"bgp_flap_count": 0, "path_mtu": 1500},
+      "cleared_alarms": ["BGP Neighbor Flap", "Route Withdraw Spike", "MTU Mismatch Warning"],
+      "checks": [
+        {"name": "MTU aligned", "passed": true, "observed": "1500 bytes"},
+        {"name": "BGP stable", "passed": true, "observed": "0 flaps"},
+        {"name": "Routes stable", "passed": true, "observed": "No withdrawals"}
+      ]
+    }
+  },
+  {
+    "incident_id": "INC-TRANS-004",
+    "domain": "Transport",
+    "severity": "High",
+    "symptom": "Transport link congestion on Router-09",
+    "description": "Latency and drops increase on aggregation uplink during traffic peak.",
+    "time_window": "2026-06-18T20:00:00+07:00/2026-06-18T20:30:00+07:00",
+    "primary_ne": "Router-09",
+    "service_impact": "High latency for mobile data sessions.",
+    "affected_services": ["Backhaul", "eMBB"],
+    "alarms": ["Link Congestion", "Queue Drops High", "Latency High"],
+    "kpis": {
+      "link_utilization": {"unit": "%", "series": [68, 82, 94, 99], "latest": 99, "normal_range": [0, 80]},
+      "queue_drop_rate": {"unit": "%", "series": [0.2, 1.3, 6.4, 11.0], "latest": 11.0, "normal_range": [0, 1]},
+      "latency_ms": {"unit": "ms", "series": [6, 12, 58, 110], "latest": 110, "normal_range": [0, 30]}
+    },
+    "logs": [
+      "20:04 QoS: congestion detected on Router-09 aggregation uplink",
+      "20:05 Router: queue drops high for backhaul class",
+      "20:08 Traffic: utilization reached 99 percent"
+    ],
+    "topology": {
+      "nodes": [
+        {"id": "gNB-09", "type": "gnb"},
+        {"id": "Router-09", "type": "router"},
+        {"id": "Agg-Ring-03", "type": "transport"},
+        {"id": "UPF-03", "type": "core"}
+      ],
+      "edges": [["gNB-09", "Router-09"], ["Router-09", "Agg-Ring-03"], ["Agg-Ring-03", "UPF-03"]]
+    },
+    "ticket_history": [
+      {"incident_id": "HIST-TRANS-027", "summary": "Transport link congestion on Router-09 caused queue drops and latency."}
+    ],
+    "diagnostics": {
+      "show interface Router-09 utilization": "Utilization 99%, queue drops 11.0%",
+      "traceroute UPF-03 from gNB-09": "Latency spike at Router-09 aggregation uplink"
+    },
+    "sop_id": "SOP-TRANS-CONGESTION",
+    "ground_truth": "Transport link congestion on Router-09",
+    "expected_actions": [
+      "Confirm utilization and queue drops",
+      "Shift traffic or apply temporary QoS relief",
+      "Validate latency and drop rate after congestion relief"
+    ],
+    "validation": {
+      "post_fix_kpis": {"link_utilization": 61, "queue_drop_rate": 0.3, "latency_ms": 12},
+      "cleared_alarms": ["Link Congestion", "Queue Drops High", "Latency High"],
+      "checks": [
+        {"name": "Utilization below threshold", "passed": true, "observed": "61%"},
+        {"name": "Queue drops normalized", "passed": true, "observed": "0.3%"},
+        {"name": "Latency normalized", "passed": true, "observed": "12 ms"}
+      ]
+    }
+  }
+]
+

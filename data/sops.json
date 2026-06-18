@@ -1,0 +1,183 @@
+[
+  {
+    "sop_id": "SOP-RAN-INTERFERENCE",
+    "domain": "RAN",
+    "title": "RAN interference troubleshooting",
+    "symptom_keywords": ["throughput", "sinr", "prb", "handover"],
+    "likely_causes": ["Interference on affected cell", "Radio parameter drift", "External RF source"],
+    "steps": [
+      "Compare SINR, PRB utilization, and handover KPIs for affected and neighbor cells",
+      "Verify external interference source with spectrum or field measurement",
+      "Review recent radio parameter changes for PCI, tilt, and power",
+      "Adjust PCI, antenna tilt, or transmit power only after approval",
+      "Monitor SINR, PRB utilization, and handover success after action"
+    ],
+    "validation_rules": ["SINR greater than 12 dB", "Handover success rate greater than 95%", "Interference alarms cleared within 15 minutes"]
+  },
+  {
+    "sop_id": "SOP-RAN-BACKHAUL",
+    "domain": "RAN",
+    "title": "RAN backhaul outage troubleshooting",
+    "symptom_keywords": ["backhaul", "n2", "cell unavailable", "packet loss"],
+    "likely_causes": ["Backhaul link failure on gNB", "Transport outage", "N2 path failure"],
+    "steps": [
+      "Confirm cell unavailability and N2 association state",
+      "Check backhaul reachability, packet loss, and interface state",
+      "Escalate confirmed physical or transport failure to transport team",
+      "Restore backhaul path or fail over to protected path",
+      "Validate N2 setup success, packet loss, and cell availability"
+    ],
+    "validation_rules": ["Packet loss below 1%", "N2 setup success greater than 98%", "Affected cells available"]
+  },
+  {
+    "sop_id": "SOP-RAN-PCI",
+    "domain": "RAN",
+    "title": "PCI conflict and mobility troubleshooting",
+    "symptom_keywords": ["handover", "pci", "collision", "mobility"],
+    "likely_causes": ["PCI collision between neighboring cells", "Neighbor relation misconfiguration"],
+    "steps": [
+      "Audit PCI assignment and neighbor relation changes",
+      "Identify duplicate or ambiguous PCI on adjacent cells",
+      "Assign non-conflicting PCI to one affected cell after approval",
+      "Refresh neighbor relation data",
+      "Validate handover success and radio link failure KPIs"
+    ],
+    "validation_rules": ["No duplicate PCI on adjacent cells", "Handover success greater than 95%", "Radio link failure rate below 2%"]
+  },
+  {
+    "sop_id": "SOP-RAN-RRU-POWER",
+    "domain": "RAN",
+    "title": "RRU power failure troubleshooting",
+    "symptom_keywords": ["cell down", "rru", "power", "cell unavailable"],
+    "likely_causes": ["Remote radio unit power failure", "RRU hardware failure"],
+    "steps": [
+      "Confirm cell unavailable alarm and radio unit reachability",
+      "Check RRU power module voltage and related VSWR alarms",
+      "Dispatch field team to inspect and restore or replace power module",
+      "Bring cell back into service after hardware recovery",
+      "Validate RRU reachability, cell availability, and cleared alarms"
+    ],
+    "validation_rules": ["RRU reachable", "Cell availability greater than 99%", "RRU power alarms cleared"]
+  },
+  {
+    "sop_id": "SOP-CORE-SMF-POLICY",
+    "domain": "Core",
+    "title": "SMF policy database timeout troubleshooting",
+    "symptom_keywords": ["pdu", "session", "smf", "policy", "database"],
+    "likely_causes": ["SMF policy database timeout", "PCF latency", "Policy dependency failure"],
+    "steps": [
+      "Check PDU session success rate and SMF reject reason",
+      "Measure SMF to policy database latency and timeout rate",
+      "Fail over policy database endpoint if latency remains abnormal",
+      "Retry representative PDU session establishment",
+      "Validate session success rate and policy latency"
+    ],
+    "validation_rules": ["Policy DB latency below 80 ms", "PDU session success greater than 98%", "SMF timeout alarms cleared"]
+  },
+  {
+    "sop_id": "SOP-CORE-AMF-OVERLOAD",
+    "domain": "Core",
+    "title": "AMF overload troubleshooting",
+    "symptom_keywords": ["amf", "registration", "overload", "signaling"],
+    "likely_causes": ["AMF overload after signaling spike", "Control-plane capacity saturation"],
+    "steps": [
+      "Confirm registration reject rate and AMF overload state",
+      "Identify signaling source and abnormal attach volume",
+      "Scale AMF capacity or shift traffic to healthy AMF instances",
+      "Disable overload control only after load has normalized",
+      "Validate registration success rate and AMF CPU"
+    ],
+    "validation_rules": ["AMF CPU below 75%", "Registration success greater than 98%", "Overload control inactive"]
+  },
+  {
+    "sop_id": "SOP-CORE-UPF-CPU",
+    "domain": "Core",
+    "title": "UPF CPU saturation troubleshooting",
+    "symptom_keywords": ["upf", "throughput", "cpu", "queue"],
+    "likely_causes": ["UPF CPU saturation", "Packet worker overload", "User-plane capacity saturation"],
+    "steps": [
+      "Confirm UPF worker CPU, throughput, and queue drop metrics",
+      "Verify SMF control plane and external data network status",
+      "Shift traffic or scale UPF capacity after approval",
+      "Monitor packet workers during traffic relief",
+      "Validate throughput recovery and queue drop normalization"
+    ],
+    "validation_rules": ["UPF CPU below 75%", "Throughput returned to normal range", "Queue drop rate below 1%"]
+  },
+  {
+    "sop_id": "SOP-CORE-DNS",
+    "domain": "Core",
+    "title": "Core DNS resolver troubleshooting",
+    "symptom_keywords": ["dns", "resolver", "nrf", "service discovery"],
+    "likely_causes": ["Core DNS resolver outage", "Resolver SERVFAIL", "Service discovery dependency failure"],
+    "steps": [
+      "Verify DNS query failure rate and SERVFAIL responses",
+      "Confirm NRF and peer network functions are otherwise healthy",
+      "Fail over affected network functions to standby resolver",
+      "Clear resolver cache only if stale records are confirmed",
+      "Validate DNS success rate and NRF discovery latency"
+    ],
+    "validation_rules": ["DNS success greater than 99%", "NRF discovery latency below 100 ms", "Resolver alarms cleared"]
+  },
+  {
+    "sop_id": "SOP-TRANS-FIBER",
+    "domain": "Transport",
+    "title": "Optical attenuation troubleshooting",
+    "symptom_keywords": ["packet loss", "optical", "attenuation", "crc"],
+    "likely_causes": ["Fiber attenuation on backhaul link", "Optical power degradation", "Dirty or damaged connector"],
+    "steps": [
+      "Check optical RX power, CRC errors, and packet loss trend",
+      "Inspect connector, patch cord, and fiber span for attenuation",
+      "Clean connector or dispatch fiber repair team",
+      "Restore protected path if available while physical repair proceeds",
+      "Validate optical power, CRC errors, and packet loss"
+    ],
+    "validation_rules": ["Packet loss below 1%", "RX optical power in normal range", "CRC errors normalized"]
+  },
+  {
+    "sop_id": "SOP-TRANS-INTERFACE",
+    "domain": "Transport",
+    "title": "Interface down after change troubleshooting",
+    "symptom_keywords": ["interface down", "admin down", "change", "blackhole"],
+    "likely_causes": ["Router interface admin down after change", "Incorrect maintenance commit"],
+    "steps": [
+      "Review latest router commit and maintenance window notes",
+      "Confirm interface admin and operational state",
+      "Restore interface admin state or roll back unintended change",
+      "Verify routing and traffic forwarding after rollback",
+      "Validate link state, traffic volume, and cleared alarms"
+    ],
+    "validation_rules": ["Interface state up/up", "Traffic restored to expected range", "Link-down alarms cleared"]
+  },
+  {
+    "sop_id": "SOP-TRANS-BGP-MTU",
+    "domain": "Transport",
+    "title": "BGP flap caused by MTU mismatch",
+    "symptom_keywords": ["bgp", "flap", "mtu", "fragmentation"],
+    "likely_causes": ["BGP neighbor instability due to MTU mismatch", "Path MTU inconsistency"],
+    "steps": [
+      "Check BGP neighbor reset reason and route withdrawal count",
+      "Compare MTU on both sides of the peering interface",
+      "Align MTU configuration or adjust path MTU consistently",
+      "Clear BGP session during approved window if needed",
+      "Validate BGP stability and route withdrawal rate"
+    ],
+    "validation_rules": ["MTU aligned on both interfaces", "BGP flap count is zero", "No repeated route withdrawals"]
+  },
+  {
+    "sop_id": "SOP-TRANS-CONGESTION",
+    "domain": "Transport",
+    "title": "Transport link congestion troubleshooting",
+    "symptom_keywords": ["congestion", "utilization", "queue", "latency"],
+    "likely_causes": ["Transport link congestion on router", "Backhaul capacity exhaustion", "QoS queue saturation"],
+    "steps": [
+      "Confirm link utilization, queue drops, and latency trend",
+      "Identify traffic class causing congestion",
+      "Shift traffic or apply temporary QoS relief after approval",
+      "Plan capacity expansion if congestion is recurrent",
+      "Validate utilization, drop rate, and latency after relief"
+    ],
+    "validation_rules": ["Link utilization below 80%", "Queue drop rate below 1%", "Latency below 30 ms"]
+  }
+]
+
