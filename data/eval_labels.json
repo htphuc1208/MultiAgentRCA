@@ -1,0 +1,125 @@
+[
+  {
+    "incident_id": "INC-RAN-001",
+    "ground_truth": "Interference on Cell-23",
+    "expected_sop_id": "SOP-RAN-INTERFERENCE",
+    "expected_actions": [
+      "Verify external interference source",
+      "Review recent radio parameter changes",
+      "Adjust PCI tilt or power if needed",
+      "Monitor SINR and handover success rate after action"
+    ]
+  },
+  {
+    "incident_id": "INC-RAN-002",
+    "ground_truth": "Backhaul link failure on gNB-12",
+    "expected_sop_id": "SOP-RAN-BACKHAUL",
+    "expected_actions": [
+      "Escalate backhaul link alarm to transport team",
+      "Check interface optical power and physical link",
+      "Restore N2 path and verify cell availability",
+      "Monitor packet loss after restoration"
+    ]
+  },
+  {
+    "incident_id": "INC-RAN-003",
+    "ground_truth": "PCI collision between Cell-31 and Cell-32",
+    "expected_sop_id": "SOP-RAN-PCI",
+    "expected_actions": [
+      "Audit PCI and neighbor relation configuration",
+      "Assign non-conflicting PCI to one affected cell",
+      "Validate handover success rate and radio link failure rate"
+    ]
+  },
+  {
+    "incident_id": "INC-RAN-004",
+    "ground_truth": "Remote radio unit power failure",
+    "expected_sop_id": "SOP-RAN-RRU-POWER",
+    "expected_actions": [
+      "Dispatch field team to inspect RRU power module",
+      "Replace or restore power module",
+      "Verify cell availability after RRU recovery"
+    ]
+  },
+  {
+    "incident_id": "INC-CORE-001",
+    "ground_truth": "SMF policy database timeout",
+    "expected_sop_id": "SOP-CORE-SMF-POLICY",
+    "expected_actions": [
+      "Check SMF to policy database latency",
+      "Fail over policy database endpoint if timeout persists",
+      "Retry PDU session setup after dependency recovery"
+    ]
+  },
+  {
+    "incident_id": "INC-CORE-002",
+    "ground_truth": "AMF overload after signaling spike",
+    "expected_sop_id": "SOP-CORE-AMF-OVERLOAD",
+    "expected_actions": [
+      "Confirm AMF overload and signaling source",
+      "Scale AMF capacity or shift traffic",
+      "Validate registration success rate after load relief"
+    ]
+  },
+  {
+    "incident_id": "INC-CORE-003",
+    "ground_truth": "UPF CPU saturation",
+    "expected_sop_id": "SOP-CORE-UPF-CPU",
+    "expected_actions": [
+      "Confirm UPF worker CPU and queue drops",
+      "Shift traffic or scale UPF capacity",
+      "Validate throughput and drop rate after traffic relief"
+    ]
+  },
+  {
+    "incident_id": "INC-CORE-004",
+    "ground_truth": "Core DNS resolver outage",
+    "expected_sop_id": "SOP-CORE-DNS",
+    "expected_actions": [
+      "Verify DNS resolver health and query failures",
+      "Fail over to standby resolver",
+      "Validate NF service discovery latency and DNS success rate"
+    ]
+  },
+  {
+    "incident_id": "INC-TRANS-001",
+    "ground_truth": "Fiber attenuation on Backhaul-Link-14",
+    "expected_sop_id": "SOP-TRANS-FIBER",
+    "expected_actions": [
+      "Check optical RX power and CRC error trend",
+      "Dispatch fiber inspection or clean connector",
+      "Validate packet loss and optical power after repair"
+    ]
+  },
+  {
+    "incident_id": "INC-TRANS-002",
+    "ground_truth": "Router interface admin down after change",
+    "expected_sop_id": "SOP-TRANS-INTERFACE",
+    "expected_actions": [
+      "Review latest router commit",
+      "Restore interface admin state if change was unintended",
+      "Validate traffic and link state after rollback"
+    ]
+  },
+  {
+    "incident_id": "INC-TRANS-003",
+    "ground_truth": "BGP neighbor instability due to MTU mismatch",
+    "expected_sop_id": "SOP-TRANS-BGP-MTU",
+    "expected_actions": [
+      "Compare MTU on both BGP peering interfaces",
+      "Align MTU configuration or path MTU",
+      "Validate BGP stability and route withdrawals"
+    ]
+  },
+  {
+    "incident_id": "INC-TRANS-004",
+    "ground_truth": "Transport link congestion on Router-09",
+    "expected_sop_id": "SOP-TRANS-CONGESTION",
+    "expected_actions": [
+      "Confirm utilization and queue drops",
+      "Shift traffic or apply temporary QoS relief",
+      "Validate latency and drop rate after congestion relief"
+    ]
+  }
+]
+

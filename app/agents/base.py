@@ -6,14 +6,26 @@ from typing import Any
 from app.memory.blackboard import Blackboard
 from app.models import ToolCall
 from app.tools.telecom_tools import TelecomToolbox
+from app.llm.client import BaseLLMClient
 
 
 class BaseAgent(ABC):
     name = "Base Agent"
 
-    def __init__(self, blackboard: Blackboard, tools: TelecomToolbox) -> None:
+    def __init__(
+        self,
+        blackboard: Blackboard,
+        tools: TelecomToolbox,
+        *,
+        mode: str = "rule",
+        llm_client: BaseLLMClient | None = None,
+        max_tool_calls: int = 6,
+    ) -> None:
         self.blackboard = blackboard
         self.tools = tools
+        self.mode = mode
+        self.llm_client = llm_client
+        self.max_tool_calls = max_tool_calls
 
     @abstractmethod
     def run(self) -> dict[str, Any]:
@@ -40,3 +52,9 @@ class BaseAgent(ABC):
         )
         return outputs
 
+    @property
+    def use_llm(self) -> bool:
+        return self.mode == "llm" and self.llm_client is not None
+
+    def _record_llm(self, call: object) -> None:
+        self.blackboard.record_llm(call)

@@ -42,8 +42,10 @@ class Hypothesis:
     domain: str
     confidence: float
     evidence: list[str]
+    evidence_refs: list[str] = field(default_factory=list)
     missing_evidence: list[str] = field(default_factory=list)
     contradictions: list[str] = field(default_factory=list)
+    verification_notes: list[str] = field(default_factory=list)
     source_agents: list[str] = field(default_factory=list)
     scores: dict[str, float] = field(default_factory=dict)
 
@@ -65,6 +67,12 @@ class RCAReport:
     validation_result: dict[str, Any]
     trace: list[AgentStep]
     metrics: dict[str, Any] = field(default_factory=dict)
+    llm_calls: list[dict[str, Any]] = field(default_factory=list)
+    token_usage: dict[str, Any] = field(default_factory=dict)
+    latency_ms: int = 0
+    evidence_refs: list[str] = field(default_factory=list)
+    selected_sop: dict[str, Any] = field(default_factory=dict)
+    verification_notes: list[str] = field(default_factory=list)
     generated_at: str = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
@@ -72,4 +80,3 @@ class RCAReport:
         data["hypotheses"] = [hypothesis.to_dict() for hypothesis in self.hypotheses]
         data["trace"] = [step.to_dict() for step in self.trace]
         return data
-

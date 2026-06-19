@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from app.agents.base import BaseAgent
+from app.llm.prompts import VERIFIER_PROMPT
+from app.llm.schemas import VerificationOutput
 from app.models import Hypothesis
 
 
@@ -10,7 +12,36 @@ class ConsensusVerifierAgent(BaseAgent):
     name = "Consensus & Verifier Agent"
 
     def run(self) -> dict[str, Any]:
+        if self.use_llm:
+            return self._run_llm()
+        return self._run_rule()
+
+    def _run_llm(self) -> dict[str, Any]:
         start = len(self.blackboard.tool_calls)
+        incident = self.blackboard.get("incident")
+        hypotheses: list[Hypothesis] = self.blackboard.get("hypotheses", [])
+        sop_context = self.blackboard.get("sop_context")
+        topology_context = self.blackboard.get("topology_context")
+        data_evidence = self.blackboard.get("data_evidence")
+        parsed, llm_call = self.llm_client.structured(
+            agent=self.name,
+            system_prompt=VERIFIER_PROMPT,
+            user_payload={
+                "incident": self._incident_stub(incident),
+                "hypotheses": [hypothesis.to_dict() for hypothesis in hypotheses],
+                "sop_context": sop_context,
+                "topology_context": topology_context,
+                "data_evidence": data_evidence,
+            },
+            response_model=VerificationOutput,
+            max_tool_calls=self.max_tool_calls,
+        )
+        self._record_llm(llm_call)
+        self._merge_llm_verification(hypotheses, parsed)
+        return self._run_rule(start_tool_index=start, action_prefix="llm ")
+
+    def _run_rule(self, start_tool_index: int | None = None, action_prefix: str = "") -> dict[str, Any]:
+        start = len(self.blackboard.tool_calls) if start_tool_index is None else start_tool_index
         incident = self.blackboard.get("incident")
         hypotheses: list[Hypothesis] = self.blackboard.get("hypotheses", [])
         sop_context = self.blackboard.get("sop_context")
@@ -31,7 +62,7 @@ class ConsensusVerifierAgent(BaseAgent):
         self.blackboard.set("verified_hypotheses", scored)
         self.blackboard.set("selected_hypothesis", selected)
         return self._record(
-            "score and verify hypotheses",
+            f"{action_prefix}score and verify hypotheses".strip(),
             f"Selected '{selected.cause}' with consensus score {selected.scores['consensus_score']:.2f}.",
             {"incident_id": incident["incident_id"], "hypothesis_count": len(hypotheses)},
             {
@@ -41,6 +72,31 @@ class ConsensusVerifierAgent(BaseAgent):
             },
             start,
         )
+
+    def _incident_stub(self, incident: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "incident_id": incident["incident_id"],
+            "domain": incident.get("domain"),
+            "symptom": incident.get("symptom"),
+            "primary_ne": incident.get("primary_ne"),
+            "service_impact": incident.get("service_impact"),
+        }
+
+    def _merge_llm_verification(self, hypotheses: list[Hypothesis], parsed: VerificationOutput) -> None:
+        verified = {item.cause.lower(): item for item in parsed.verified_hypotheses}
+        for hypothesis in hypotheses:
+            item = verified.get(hypothesis.cause.lower())
+            if not item:
+                continue
+            if item.evidence_refs:
+                hypothesis.evidence_refs = item.evidence_refs
+            hypothesis.contradictions = list(dict.fromkeys([*hypothesis.contradictions, *item.contradictions]))
+            hypothesis.verification_notes = item.notes or parsed.verification_notes
+            if item.unsupported_claims:
+                hypothesis.missing_evidence = list(
+                    dict.fromkeys([*hypothesis.missing_evidence, *item.unsupported_claims])
+                )
+            hypothesis.confidence = round((hypothesis.confidence + item.verifier_confidence) / 2, 3)
 
     def _score_hypothesis(
         self,
@@ -66,7 +122,7 @@ class ConsensusVerifierAgent(BaseAgent):
         )
         if contradictions:
             consensus = max(0.0, consensus - 0.2)
-        hypothesis.contradictions = contradictions
+        hypothesis.contradictions = list(dict.fromkeys([*hypothesis.contradictions, *contradictions]))
         hypothesis.scores = {
             "evidence_match": round(evidence_match, 3),
             "topology_consistency": round(topology_consistency, 3),
@@ -136,4 +192,3 @@ class ConsensusVerifierAgent(BaseAgent):
         if hypothesis.contradictions:
             notes.extend(hypothesis.contradictions)
         return notes
-

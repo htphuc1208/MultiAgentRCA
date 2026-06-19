@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 
 from app.agents.orchestrator import OrchestratorAgent
 from app.data_store import DataStore
+from app.llm.client import MissingAPIKeyError
 
 
 st.set_page_config(
@@ -46,9 +47,9 @@ def load_store() -> DataStore:
 
 
 @st.cache_data(show_spinner=False)
-def run_report(incident_id: str) -> dict:
+def run_report(incident_id: str, mode: str) -> dict:
     store = load_store()
-    return OrchestratorAgent(store).run(incident_id).to_dict()
+    return OrchestratorAgent(store, mode=mode).run(incident_id).to_dict()
 
 
 def _kpi_table(kpis: dict) -> pd.DataFrame:
@@ -76,8 +77,13 @@ incident_options = {
 st.sidebar.title("Telecom RCA")
 selected_label = st.sidebar.selectbox("Incident", list(incident_options))
 incident_id = incident_options[selected_label]
+mode = st.sidebar.segmented_control("Mode", ["rule", "llm"], default="rule")
 incident = store.get_incident(incident_id)
-report = run_report(incident_id)
+try:
+    report = run_report(incident_id, mode)
+except MissingAPIKeyError as exc:
+    st.error(str(exc))
+    st.stop()
 
 st.title("Multi-Agent Telecom RCA")
 st.caption("Tool-assisted, SOP-guided, consensus-verified troubleshooting prototype")
@@ -87,6 +93,10 @@ left.metric("Domain", report["domain"])
 mid.metric("Severity", report["severity"])
 right.metric("Confidence", f"{report['confidence']:.2f}")
 last.metric("Agent steps", report["metrics"]["agent_steps"])
+st.caption(
+    f"Mode: {mode} | LLM calls: {len(report.get('llm_calls', []))} | "
+    f"Tokens: {report.get('token_usage', {}).get('total_tokens', 0)}"
+)
 
 tab_overview, tab_trace, tab_evidence, tab_remediation = st.tabs(
     ["Incident Overview", "Agent Trace", "Evidence & Root Cause", "Remediation & Validation"]
@@ -134,6 +144,24 @@ with tab_trace:
     selected_step = st.selectbox("Trace detail", [f"{row['Step']}. {row['Agent']}" for row in trace_rows])
     step_index = int(selected_step.split(".", 1)[0]) - 1
     st.json(report["trace"][step_index])
+    if report.get("llm_calls"):
+        st.subheader("LLM Calls")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Agent": call["agent"],
+                        "Model": call["model"],
+                        "Latency ms": call["latency_ms"],
+                        "Tool calls": len(call.get("tool_calls", [])),
+                        "Tokens": call.get("token_usage", {}).get("total_tokens", 0),
+                    }
+                    for call in report["llm_calls"]
+                ]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
 
 with tab_evidence:
     col1, col2 = st.columns([1, 1.2])

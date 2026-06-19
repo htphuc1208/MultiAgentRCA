@@ -12,6 +12,7 @@ class Blackboard:
         self.data: dict[str, Any] = {}
         self.trace: list[AgentStep] = []
         self.tool_calls: list[ToolCall] = []
+        self.llm_calls: list[dict[str, Any]] = []
 
     def set(self, key: str, value: Any) -> None:
         self.data[key] = value
@@ -47,10 +48,15 @@ class Blackboard:
         self.trace.append(step)
         return step
 
+    def record_llm(self, call: Any) -> dict[str, Any]:
+        payload = call.to_dict() if hasattr(call, "to_dict") else dict(call)
+        self.llm_calls.append(payload)
+        return payload
+
     def snapshot(self) -> dict[str, Any]:
         return {
             "data": self.data,
             "trace": [step.to_dict() for step in self.trace],
             "tool_calls": [call.to_dict() for call in self.tool_calls],
+            "llm_calls": self.llm_calls,
         }
-

@@ -4,6 +4,8 @@ import re
 from typing import Any
 
 from app.agents.base import BaseAgent
+from app.llm.prompts import RCA_PROMPT
+from app.llm.schemas import RCAHypothesisOutput
 from app.models import Hypothesis
 
 
@@ -11,6 +13,52 @@ class RCAAgent(BaseAgent):
     name = "RCA Agent"
 
     def run(self) -> dict[str, Any]:
+        if self.use_llm:
+            return self._run_llm()
+        return self._run_rule()
+
+    def _run_llm(self) -> dict[str, Any]:
+        start = len(self.blackboard.tool_calls)
+        incident = self.blackboard.get("incident")
+        triage = self.blackboard.get("triage")
+        data = self.blackboard.get("data_evidence")
+        topology = self.blackboard.get("topology_context")
+        parsed, llm_call = self.llm_client.structured(
+            agent=self.name,
+            system_prompt=RCA_PROMPT,
+            user_payload={
+                "incident": self._incident_stub(incident),
+                "triage": triage,
+                "data_evidence": data,
+                "topology_context": topology,
+            },
+            response_model=RCAHypothesisOutput,
+            max_tool_calls=self.max_tool_calls,
+        )
+        self._record_llm(llm_call)
+        hypotheses = [
+            Hypothesis(
+                cause=item.cause,
+                domain=item.domain,
+                confidence=item.confidence,
+                evidence=item.evidence,
+                evidence_refs=item.evidence_refs,
+                missing_evidence=item.missing_evidence,
+                contradictions=item.contradictions,
+                source_agents=[self.name],
+            )
+            for item in parsed.hypotheses
+        ]
+        self.blackboard.set("hypotheses", hypotheses)
+        return self._record(
+            "llm generate root-cause hypotheses",
+            f"LLM generated {len(hypotheses)} candidate root causes.",
+            {"domain": triage["domain"], "primary_ne": triage["primary_ne"]},
+            {"hypotheses": [hypothesis.to_dict() for hypothesis in hypotheses]},
+            start,
+        )
+
+    def _run_rule(self) -> dict[str, Any]:
         start = len(self.blackboard.tool_calls)
         incident = self.blackboard.get("incident")
         triage = self.blackboard.get("triage")
@@ -27,6 +75,18 @@ class RCAAgent(BaseAgent):
             {"hypotheses": [hypothesis.to_dict() for hypothesis in hypotheses]},
             start,
         )
+
+    def _incident_stub(self, incident: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "incident_id": incident["incident_id"],
+            "domain": incident.get("domain"),
+            "symptom": incident.get("symptom"),
+            "description": incident.get("description"),
+            "time_window": incident.get("time_window"),
+            "primary_ne": incident.get("primary_ne"),
+            "service_impact": incident.get("service_impact"),
+            "affected_services": incident.get("affected_services", []),
+        }
 
     def _corpus(
         self,
@@ -230,4 +290,3 @@ class RCAAgent(BaseAgent):
             if any(term in text for term in terms):
                 matches.append(item)
         return matches
-

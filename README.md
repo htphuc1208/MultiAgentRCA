@@ -1,13 +1,33 @@
-# Multi-Agent Telecom RCA Prototype
+# Multi-Agent AI Telecom RCA
 
-This repository implements a decision-support prototype for telecom incident RCA:
+This repository implements a telecom root-cause analysis prototype with two modes:
 
-- multi-agent workflow with orchestrator, triage, data retrieval, topology, RCA, SOP, verifier, planner, and validation agents
-- mocked tool layer for alarms, KPIs, logs, topology, ticket history, diagnostics, SOP retrieval, and post-fix validation
-- shared blackboard trace for every agent action and tool call
-- consensus scoring over evidence, topology, SOP alignment, history, and agent confidence
-- synthetic RAN, Core, and Transport/IP incident dataset with ground truth
-- CLI, Streamlit demo, and experiment runner
+- `llm`: AI-backed multi-agent RCA using OpenAI structured outputs and tool calling.
+- `rule`: deterministic offline fallback for tests and demos without an API key.
+
+The main workflow is:
+
+```text
+Incident -> Orchestrator -> Triage -> Data Retrieval -> Topology
+         -> RCA Hypotheses -> SOP Retrieval -> Consensus/Verifier
+         -> Remediation Planner -> Validation -> RCA Report
+```
+
+## Setup
+
+Install dependencies:
+
+```bash
+python3 -m pip install --user --break-system-packages -r requirements.txt
+```
+
+For AI mode:
+
+```bash
+export OPENAI_API_KEY="..."
+export OPENAI_MODEL="gpt-5.5"
+export OPENAI_REASONING_EFFORT="medium"
+```
 
 ## Run
 
@@ -17,54 +37,78 @@ List incidents:
 python3 -m app.cli --list
 ```
 
-Generate one RCA report:
+Run the real AI-agent workflow:
 
 ```bash
 python3 -m app.cli --incident-id INC-RAN-001 --output reports/INC-RAN-001.json
 ```
 
-Run baseline/proposed experiments:
+Run offline fallback:
 
 ```bash
-python3 -m app.evaluation.run_experiments
+python3 -m app.cli --mode rule --incident-id INC-RAN-001
 ```
 
-Start the demo UI:
+Start the UI:
 
 ```bash
 streamlit run ui/streamlit_app.py
 ```
 
-## Architecture
+## Evaluation
 
-The workflow follows:
+Offline smoke evaluation:
 
-```text
-Incident -> Orchestrator -> Triage -> Data Retrieval -> Topology
-         -> RCA Hypotheses -> SOP Retrieval -> Consensus/Verifier
-         -> Remediation Planner -> Validation -> Incident Report
+```bash
+python3 -m app.evaluation.run_experiments --mode rule
 ```
 
-The final report exposes root cause, confidence, supporting evidence, ranked hypotheses, remediation actions, validation checks, and a full agent/tool trace.
+LLM evaluation with repeated runs for stability:
 
-## Evaluation Metrics
+```bash
+python3 -m app.evaluation.run_experiments --mode llm --repeats 3
+```
 
-`app/evaluation/metrics.py` calculates:
-
-- RCA accuracy
-- Top-3 RCA accuracy
-- remediation correctness
-- tool-use validity
-- evidence coverage
-- hallucination rate
-- stability
-
-The experiment runner writes:
+The runner writes:
 
 - `reports/experiment_results.csv`
 - `reports/experiment_summary.csv`
 
+Configurations:
+
+- `Baseline 1 Rule/SOP lookup only`
+- `Baseline 2 Single ReAct-style agent`
+- `Baseline 3 Multi-Agent without consensus`
+- `Proposed Multi-Agent + SOP + Consensus`
+
+## Data Model
+
+Runtime incident data lives in `data/incidents.json`. Hidden evaluation labels are separated into `data/eval_labels.json`, and ticket history is separated into `data/tickets.json`.
+
+`DataStore.get_incident()` strips these fields from runtime input:
+
+- `ground_truth`
+- `expected_actions`
+- `sop_id`
+- `ticket_history`
+
+This prevents LLM agents from reading labels or SOP shortcuts during RCA.
+
+## Report
+
+The RCA report includes:
+
+- selected root cause and confidence
+- evidence and evidence refs
+- ranked hypotheses
+- selected SOP
+- verification notes
+- recommended remediation actions
+- validation plan and validation result
+- full agent/tool trace
+- LLM calls, token usage, and latency
+
 ## Notes
 
-The current implementation is deterministic and does not require an LLM API key. This keeps the prototype reproducible for demos and research evaluation. A real LLM planner can later replace the rule-based `RCAAgent` while preserving the same tool, blackboard, verifier, and evaluation interfaces.
+`llm` mode is the intended AI-agent system. `rule` mode is retained only for offline reproducibility and regression tests.
 

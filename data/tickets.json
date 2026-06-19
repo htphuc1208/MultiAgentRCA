@@ -1,0 +1,87 @@
+[
+  {
+    "incident_id": "HIST-RAN-044",
+    "related_incident_id": "INC-RAN-001",
+    "ne_id": "Cell-23",
+    "domain": "RAN",
+    "summary": "External interference on Cell-19 caused Low SINR and PRB saturation."
+  },
+  {
+    "incident_id": "HIST-RAN-051",
+    "related_incident_id": "INC-RAN-002",
+    "ne_id": "gNB-12",
+    "domain": "RAN",
+    "summary": "Backhaul link failure on gNB caused N2 path down and cells unavailable."
+  },
+  {
+    "incident_id": "HIST-RAN-061",
+    "related_incident_id": "INC-RAN-003",
+    "ne_id": "Cell-31",
+    "domain": "RAN",
+    "summary": "PCI collision between neighboring cells caused handover failure spike."
+  },
+  {
+    "incident_id": "HIST-RAN-066",
+    "related_incident_id": "INC-RAN-004",
+    "ne_id": "Cell-44",
+    "domain": "RAN",
+    "summary": "Remote radio unit power failure caused cell unavailable alarm."
+  },
+  {
+    "incident_id": "HIST-CORE-018",
+    "related_incident_id": "INC-CORE-001",
+    "ne_id": "SMF-01",
+    "domain": "Core",
+    "summary": "SMF policy database timeout caused PDU session failures."
+  },
+  {
+    "incident_id": "HIST-CORE-020",
+    "related_incident_id": "INC-CORE-002",
+    "ne_id": "AMF-02",
+    "domain": "Core",
+    "summary": "AMF overload after signaling spike caused registration rejects."
+  },
+  {
+    "incident_id": "HIST-CORE-024",
+    "related_incident_id": "INC-CORE-003",
+    "ne_id": "UPF-03",
+    "domain": "Core",
+    "summary": "UPF CPU saturation degraded enterprise APN throughput."
+  },
+  {
+    "incident_id": "HIST-CORE-031",
+    "related_incident_id": "INC-CORE-004",
+    "ne_id": "DNS-CORE-01",
+    "domain": "Core",
+    "summary": "Core DNS resolver outage caused NRF service discovery timeout."
+  },
+  {
+    "incident_id": "HIST-TRANS-011",
+    "related_incident_id": "INC-TRANS-001",
+    "ne_id": "Backhaul-Link-14",
+    "domain": "Transport",
+    "summary": "Fiber attenuation on backhaul link caused optical power low and CRC errors."
+  },
+  {
+    "incident_id": "HIST-TRANS-016",
+    "related_incident_id": "INC-TRANS-002",
+    "ne_id": "Router-05",
+    "domain": "Transport",
+    "summary": "Router interface admin down after change caused link down."
+  },
+  {
+    "incident_id": "HIST-TRANS-021",
+    "related_incident_id": "INC-TRANS-003",
+    "ne_id": "Router-07",
+    "domain": "Transport",
+    "summary": "BGP neighbor instability due to MTU mismatch caused route flap."
+  },
+  {
+    "incident_id": "HIST-TRANS-027",
+    "related_incident_id": "INC-TRANS-004",
+    "ne_id": "Router-09",
+    "domain": "Transport",
+    "summary": "Transport link congestion on Router-09 caused queue drops and latency."
+  }
+]
+
