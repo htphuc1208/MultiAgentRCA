@@ -7,4 +7,5 @@ __pycache__/
 venv/
 reports/*.csv
 reports/*.json
+.env
 
