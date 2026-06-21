@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 from pathlib import Path
 
 from app.data_store import DataStore
@@ -14,6 +15,11 @@ def main() -> None:
     parser.add_argument("--data-dir", default="data")
     parser.add_argument("--output-dir", default="reports")
     parser.add_argument("--mode", choices=["llm", "rule"], default="rule")
+    parser.add_argument(
+        "--provider",
+        choices=["deepseek", "openai"],
+        default=os.getenv("LLM_PROVIDER", "deepseek"),
+    )
     parser.add_argument("--model")
     parser.add_argument("--reasoning-effort")
     parser.add_argument("--repeats", type=int, default=1)
@@ -28,6 +34,7 @@ def main() -> None:
             *evaluate_baselines(
                 store,
                 mode=args.mode,
+                provider=args.provider,
                 model=args.model,
                 reasoning_effort=args.reasoning_effort,
                 repeats=repeats,
@@ -35,6 +42,7 @@ def main() -> None:
             *evaluate_proposed(
                 store,
                 mode=args.mode,
+                provider=args.provider,
                 model=args.model,
                 reasoning_effort=args.reasoning_effort,
                 repeats=repeats,

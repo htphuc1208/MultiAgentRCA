@@ -8,4 +8,7 @@ venv/
 reports/*.csv
 reports/*.json
 .env
-
+OpenRCA/
+openrca_dataset/
+data/openrca_raw/
+.cache/openrca/

@@ -1,9 +1,13 @@
+import json
+import os
+from types import SimpleNamespace
+from unittest.mock import patch
 import unittest
 
 from app.agents.orchestrator import OrchestratorAgent
 from app.data_store import DataStore
 from app.evaluation.metrics import evaluate_proposed, summarize
-from app.llm.client import FakeLLMClient
+from app.llm.client import DeepSeekLLMClient, FakeLLMClient, MissingAPIKeyError
 from app.llm.schemas import (
     DataCollectionPlan,
     RCAHypothesisModel,
@@ -16,6 +20,34 @@ from app.llm.schemas import (
     VerificationOutput,
     VerifiedHypothesisModel,
 )
+from app.tools.registry import telecom_tool_definitions
+
+
+class FakeDeepSeekChatClient:
+    def __init__(self, responses: list[object]) -> None:
+        self.responses = responses
+        self.requests: list[dict] = []
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+    def create(self, **kwargs):
+        self.requests.append(kwargs)
+        if not self.responses:
+            raise AssertionError("No fake DeepSeek response queued")
+        return self.responses.pop(0)
+
+
+def deepseek_response(content: str | None = None, tool_calls: list[object] | None = None):
+    message = SimpleNamespace(content=content, tool_calls=tool_calls)
+    usage = SimpleNamespace(model_dump=lambda: {"total_tokens": 7})
+    return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage)
+
+
+def deepseek_tool_call(name: str, arguments: dict) -> object:
+    return SimpleNamespace(
+        id="call_1",
+        type="function",
+        function=SimpleNamespace(name=name, arguments=json.dumps(arguments)),
+    )
 
 
 class PipelineTest(unittest.TestCase):
@@ -128,6 +160,92 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(report["root_cause"], "Interference on Cell-23")
         self.assertGreaterEqual(len(report["llm_calls"]), 8)
         self.assertEqual(report["metrics"]["llm_calls"], len(report["llm_calls"]))
+
+    def test_deepseek_tool_schema_conversion(self) -> None:
+        converted = DeepSeekLLMClient.to_deepseek_tools(telecom_tool_definitions(["get_alarms"]))
+        self.assertEqual(converted[0]["type"], "function")
+        self.assertEqual(converted[0]["function"]["name"], "get_alarms")
+        self.assertIn("parameters", converted[0]["function"])
+        self.assertNotIn("strict", converted[0]["function"])
+
+    def test_deepseek_structured_json_without_tools(self) -> None:
+        client = FakeDeepSeekChatClient(
+            [
+                deepseek_response(
+                    content=json.dumps(
+                        {
+                            "domain": "RAN",
+                            "severity": "High",
+                            "primary_ne": "Cell-23",
+                            "affected_services": ["eMBB"],
+                            "service_impact": "Mobile broadband degradation",
+                            "intent": "RAN troubleshooting",
+                            "rationale": ["Low SINR"],
+                        }
+                    )
+                )
+            ]
+        )
+        parsed, call = DeepSeekLLMClient(api_key="test", client=client, thinking="disabled").structured(
+            agent="Triage Agent",
+            system_prompt="Classify and return json.",
+            user_payload={"incident": {"incident_id": "INC-RAN-001"}},
+            response_model=TriageDecision,
+        )
+
+        self.assertEqual(parsed.domain, "RAN")
+        self.assertEqual(call.token_usage["total_tokens"], 7)
+        self.assertEqual(client.requests[-1]["response_format"], {"type": "json_object"})
+        self.assertEqual(client.requests[-1]["extra_body"], {"thinking": {"type": "disabled"}})
+
+    def test_deepseek_structured_tool_loop_records_tool_calls(self) -> None:
+        client = FakeDeepSeekChatClient(
+            [
+                deepseek_response(
+                    tool_calls=[
+                        deepseek_tool_call(
+                            "get_alarms",
+                            {"ne_id": "Cell-23", "time_window": None, "incident_id": "INC-RAN-001"},
+                        )
+                    ]
+                ),
+                deepseek_response(
+                    content=json.dumps(
+                        {
+                            "required_tools": ["get_alarms"],
+                            "evidence_items": ["Alarm: Low SINR"],
+                            "missing_data": [],
+                            "rationale": "Collected active alarms.",
+                        }
+                    )
+                ),
+            ]
+        )
+
+        def execute_tool(name: str, arguments: dict):
+            self.assertEqual(name, "get_alarms")
+            self.assertEqual(arguments["incident_id"], "INC-RAN-001")
+            return ["Low SINR"]
+
+        parsed, call = DeepSeekLLMClient(api_key="test", client=client).structured(
+            agent="Data Retrieval Agent",
+            system_prompt="Collect telemetry and return json.",
+            user_payload={"incident": {"incident_id": "INC-RAN-001"}},
+            response_model=DataCollectionPlan,
+            tools=telecom_tool_definitions(["get_alarms"]),
+            tool_executor=execute_tool,
+            max_tool_calls=1,
+        )
+
+        self.assertEqual(parsed.evidence_items, ["Alarm: Low SINR"])
+        self.assertEqual(call.tool_calls[0]["name"], "get_alarms")
+        self.assertIn("tools", client.requests[0])
+        self.assertNotIn("tools", client.requests[-1])
+
+    def test_deepseek_missing_api_key_error(self) -> None:
+        with patch.dict(os.environ, {"DEEPSEEK_API_KEY": ""}):
+            with self.assertRaisesRegex(MissingAPIKeyError, "DEEPSEEK_API_KEY"):
+                DeepSeekLLMClient()
 
 
 if __name__ == "__main__":

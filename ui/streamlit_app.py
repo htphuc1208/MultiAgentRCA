@@ -25,16 +25,50 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"],
+    [data-testid="stSidebarContent"], [data-testid="stHeader"] {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+    .stApp *, [data-testid="stSidebar"] *, [data-testid="stSidebarContent"] * {
+      color: #000000 !important;
+    }
     .block-container { padding-top: 1.4rem; padding-bottom: 2rem; }
     [data-testid="stMetric"] {
       border: 1px solid #d7dde6;
       border-radius: 8px;
       padding: 0.65rem 0.8rem;
       background: #ffffff;
+      color: #000000;
     }
-    div[data-testid="stTabs"] button { font-weight: 600; }
-    .small-label { color: #5b6472; font-size: 0.86rem; margin-bottom: 0.1rem; }
-    .trace-summary { color: #253041; font-size: 0.95rem; }
+    div[data-testid="stTabs"] button {
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-weight: 600;
+    }
+    div[data-baseweb="select"], div[data-baseweb="select"] *,
+    div[data-baseweb="input"], div[data-baseweb="input"] *,
+    [data-testid="stSegmentedControl"] *, [data-testid="stDownloadButton"] * {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+    pre, code, kbd, samp,
+    [data-testid="stCodeBlock"], [data-testid="stCodeBlock"] *,
+    [data-testid="stJson"], [data-testid="stJson"] * {
+      background: #f6f8fa !important;
+      color: #111111 !important;
+      border-color: #c9d1d9 !important;
+    }
+    pre, [data-testid="stCodeBlock"], [data-testid="stJson"] {
+      border: 1px solid #c9d1d9 !important;
+      border-radius: 6px !important;
+    }
+    code {
+      padding: 0.08rem 0.25rem;
+      border-radius: 4px;
+    }
+    .small-label { color: #000000; font-size: 0.86rem; margin-bottom: 0.1rem; }
+    .trace-summary { color: #000000; font-size: 0.95rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -79,6 +113,7 @@ selected_label = st.sidebar.selectbox("Incident", list(incident_options))
 incident_id = incident_options[selected_label]
 mode = st.sidebar.segmented_control("Mode", ["rule", "llm"], default="rule")
 incident = store.get_incident(incident_id)
+eval_label = store.get_eval_label(incident_id)
 try:
     report = run_report(incident_id, mode)
 except MissingAPIKeyError as exc:
@@ -179,7 +214,7 @@ with tab_evidence:
             score_rows.append(row)
         st.dataframe(pd.DataFrame(score_rows), use_container_width=True, hide_index=True)
         st.subheader("Ground Truth")
-        st.write(incident["ground_truth"])
+        st.write(eval_label["ground_truth"])
 
 with tab_remediation:
     col1, col2 = st.columns([1.1, 1])

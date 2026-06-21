@@ -11,7 +11,7 @@ from app.agents.triage_agent import TriageAgent
 from app.agents.validation_agent import ValidationAgent
 from app.agents.verifier_agent import ConsensusVerifierAgent
 from app.data_store import DataStore
-from app.llm.client import BaseLLMClient, OpenAILLMClient
+from app.llm.client import BaseLLMClient, create_llm_client
 from app.memory.blackboard import Blackboard
 from app.models import Hypothesis
 from app.models import RCAReport
@@ -30,6 +30,7 @@ class OrchestratorAgent:
         *,
         mode: str = "rule",
         llm_client: BaseLLMClient | None = None,
+        provider: str = "deepseek",
         model: str | None = None,
         reasoning_effort: str | None = None,
         max_tool_calls: int = 6,
@@ -38,6 +39,7 @@ class OrchestratorAgent:
         self.store = store
         self.mode = mode
         self.llm_client = llm_client
+        self.provider = provider
         self.model = model
         self.reasoning_effort = reasoning_effort
         self.max_tool_calls = max_tool_calls
@@ -144,7 +146,11 @@ class OrchestratorAgent:
             return None
         if self.llm_client is not None:
             return self.llm_client
-        return OpenAILLMClient(model=self.model, reasoning_effort=self.reasoning_effort)
+        return create_llm_client(
+            provider=self.provider,
+            model=self.model,
+            reasoning_effort=self.reasoning_effort,
+        )
 
     def _select_without_consensus(self, blackboard: Blackboard) -> None:
         hypotheses: list[Hypothesis] = blackboard.get("hypotheses", [])

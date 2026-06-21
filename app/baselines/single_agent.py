@@ -4,7 +4,7 @@ from typing import Any
 
 from app.agents.orchestrator import OrchestratorAgent
 from app.data_store import DataStore
-from app.llm.client import BaseLLMClient, OpenAILLMClient
+from app.llm.client import BaseLLMClient, create_llm_client
 from app.llm.prompts import STRICT_EVIDENCE_POLICY
 from app.llm.schemas import RCAHypothesisOutput
 from app.memory.blackboard import Blackboard
@@ -27,6 +27,7 @@ class SingleAgentRunner:
         *,
         mode: str = "rule",
         llm_client: BaseLLMClient | None = None,
+        provider: str = "deepseek",
         model: str | None = None,
         reasoning_effort: str | None = None,
         max_tool_calls: int = 8,
@@ -34,6 +35,7 @@ class SingleAgentRunner:
         self.store = store
         self.mode = mode
         self.llm_client = llm_client
+        self.provider = provider
         self.model = model
         self.reasoning_effort = reasoning_effort
         self.max_tool_calls = max_tool_calls
@@ -48,7 +50,11 @@ class SingleAgentRunner:
         tools = TelecomToolbox(self.store, blackboard)
         incident = self.store.get_incident(incident_id)
         blackboard.set("incident", incident)
-        llm_client = self.llm_client or OpenAILLMClient(model=self.model, reasoning_effort=self.reasoning_effort)
+        llm_client = self.llm_client or create_llm_client(
+            provider=self.provider,
+            model=self.model,
+            reasoning_effort=self.reasoning_effort,
+        )
         parsed, llm_call = llm_client.structured(
             agent="Single ReAct-style Agent",
             system_prompt=SINGLE_AGENT_PROMPT,
@@ -155,4 +161,3 @@ class SingleAgentRunner:
             "service_impact": incident.get("service_impact"),
             "affected_services": incident.get("affected_services", []),
         }
-

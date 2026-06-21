@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from app.agents.orchestrator import OrchestratorAgent
@@ -16,8 +17,14 @@ def main() -> None:
     parser.add_argument("--output", help="Optional path to write the full JSON report.")
     parser.add_argument("--list", action="store_true", help="List available incidents and exit.")
     parser.add_argument("--mode", choices=["llm", "rule"], default="llm", help="Reasoning mode.")
-    parser.add_argument("--model", help="OpenAI model override for --mode llm.")
-    parser.add_argument("--reasoning-effort", default=None, help="OpenAI reasoning effort override.")
+    parser.add_argument(
+        "--provider",
+        choices=["deepseek", "openai"],
+        default=os.getenv("LLM_PROVIDER", "deepseek"),
+        help="LLM provider for --mode llm.",
+    )
+    parser.add_argument("--model", help="Provider model override for --mode llm.")
+    parser.add_argument("--reasoning-effort", default=None, help="Provider reasoning effort override.")
     parser.add_argument("--max-tool-calls", type=int, default=8, help="Maximum tool calls per LLM-backed agent.")
     args = parser.parse_args()
 
@@ -31,6 +38,7 @@ def main() -> None:
         report = OrchestratorAgent(
             store,
             mode=args.mode,
+            provider=args.provider,
             model=args.model,
             reasoning_effort=args.reasoning_effort,
             max_tool_calls=args.max_tool_calls,

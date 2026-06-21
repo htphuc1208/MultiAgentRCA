@@ -6,7 +6,7 @@
     "symptom": "User throughput drop in Cell-23",
     "description": "Users attached to Cell-23 report low downlink throughput during busy hour.",
     "time_window": "2026-06-18T09:00:00+07:00/2026-06-18T10:00:00+07:00",
-    "primary_ne": "Cell-23",
+    "primary_ne": "Cell-23", 
     "service_impact": "Mobile broadband degradation for the downtown sector.",
     "affected_services": ["eMBB", "VoLTE"],
     "alarms": ["High PRB Utilization", "Low SINR", "Handover Failure Spike"],
